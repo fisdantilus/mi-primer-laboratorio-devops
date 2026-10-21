@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Descargar el código (tu Dockerfile y archivos de Nginx)
+      # Paso 1: Descargar el código (Dockerfile y archivos de Nginx)
       - name: Descargar repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
-      # Paso 2: El DevOps construye la imagen del servidor web
+      # Paso 2: Construye la imagen del servidor web
       - name: Construir imagen Docker de Nginx
         run: |
           echo "Compilando la imagen corporativa de Nginx..."
@@ -26,8 +26,8 @@ jobs:
           docker pull nginx:alpine
           docker tag nginx:alpine mi-nginx-empresa:latest
 
-      # Paso 3: El DevOps levanta el contenedor en el Runner para probarlo
-      # (Verificar que Tomcat o Nginx realmente encienden y no dan error 500)
+      # Paso 3: Levanta el contenedor en el Runner para probarlo
+      # (Verificar que Nginx realmente encienden y no dan error 500)
       - name: Levantar servidor y verificar estado (Healthcheck)
         run: |
           echo "Levantando el contenedor en el puerto 8080..."
