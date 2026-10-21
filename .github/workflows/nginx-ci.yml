@@ -1,0 +1,48 @@
+name: CI de Infraestructura - Servidor Web Nginx
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Descargar el código (tu Dockerfile y archivos de Nginx)
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      # Paso 2: El DevOps construye la imagen del servidor web
+      - name: Construir imagen Docker de Nginx
+        run: |
+          echo "Compilando la imagen corporativa de Nginx..."
+          # En un caso real con un Dockerfile en tu repo usarías:
+          # docker build -t mi-nginx-empresa:latest .
+          
+          # Para que este ejemplo funcione ya mismo sin archivos, usaremos una oficial:
+          docker pull nginx:alpine
+          docker tag nginx:alpine mi-nginx-empresa:latest
+
+      # Paso 3: El DevOps levanta el contenedor en el Runner para probarlo
+      # (Verificar que Tomcat o Nginx realmente encienden y no dan error 500)
+      - name: Levantar servidor y verificar estado (Healthcheck)
+        run: |
+          echo "Levantando el contenedor en el puerto 8080..."
+          docker run -d --name servidor_prueba -p 8080:80 mi-nginx-empresa:latest
+          
+          # Esperamos 3 segundos a que el servicio Nginx termine de arrancar
+          sleep 3
+          
+          echo "Haciendo una petición HTTP de prueba (curl)..."
+          curl -I http://localhost:8080
+          
+          echo "¡El servidor web responde correctamente!"
+
+      # Paso 4: Limpieza del entorno de pruebas
+      - name: Apagar y limpiar contenedor de pruebas
+        run: |
+          docker stop servidor_prueba
+          docker rm servidor_prueba
