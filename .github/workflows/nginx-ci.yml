@@ -13,7 +13,7 @@ jobs:
     steps:
       # Paso 1: Descargar el código (Dockerfile y archivos de Nginx)
       - name: Descargar repositorio
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
 
       # Paso 2: Construye la imagen del servidor web
       - name: Construir imagen Docker de Nginx
