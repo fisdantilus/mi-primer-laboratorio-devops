@@ -24,7 +24,7 @@ jobs:
           dockerfile: 'Dockerfile'
           # Ponemos esto en true para que si tu Dockerfile es viejo o tiene fallos,
           # el pipeline te avise.
-          ignore-failures: true 
+          no-fail: true
 
       # Paso 3: Construir la imagen local para poder analizarla
       - name: Construir imagen Docker local
