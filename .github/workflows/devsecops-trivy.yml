@@ -1,0 +1,43 @@
+name: DevSecOps - Linters y Analisis de Vulnerabilidades
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  seguridad-y-calidad:
+    # Fijamos el runner a la versión estable actual
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Paso 1: Descargar el código del repositorio (usando la v5 nativa de Node 24)
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+
+      # Paso 2: Comprobación de sintaxis (Linter) del Dockerfile
+      # Esto asegura que el archivo Dockerfile cumpla las buenas prácticas de Ops
+      - name: Validar sintaxis del Dockerfile (Hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: 'Dockerfile'
+          # Ponemos esto en true para que si tu Dockerfile es viejo o tiene fallos,
+          # el pipeline te avise.
+          ignore-failures: true 
+
+      # Paso 3: Construir la imagen local para poder analizarla
+      - name: Construir imagen Docker local
+        run: |
+          docker build -t mi-servidor-seguro:v1 .
+
+      # Paso 4: Escaneo de vulnerabilidades y dependencias con TRIVY
+      # Busca librerías obsoletas (CVEs) dentro de Nginx y fallos de seguridad
+      - name: Analizar seguridad de la imagen (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mi-servidor-seguro:v1'
+          format: 'table' # Muestra los resultados en una tabla limpia en la consola
+          exit-code: '0'  # Cambia a '1' en producción para bloquear el despliegue si hay fallos graves
+          vuln-type: 'os,library' # Analiza tanto el Sistema Operativo como las dependencias
+          severity: 'CRITICAL,HIGH' # Enfócate solo en riesgos Altos y Críticos
