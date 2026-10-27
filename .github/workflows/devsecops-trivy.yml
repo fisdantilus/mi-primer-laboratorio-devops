@@ -69,3 +69,5 @@ jobs:
         run: |
           docker stop servidor_prueba || true
           docker rm servidor_prueba || true
+          
+# Forzar ejecucion
