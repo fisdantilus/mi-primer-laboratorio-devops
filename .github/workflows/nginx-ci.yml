@@ -27,22 +27,24 @@ jobs:
           docker tag nginx:alpine mi-nginx-empresa:latest
 
       # Paso 3: Levanta el contenedor en el Runner para probarlo
-      # (Verificar que Nginx realmente encienden y no dan error 500)
       - name: Levantar servidor y verificar estado (Healthcheck)
         run: |
           echo "Levantando el contenedor en el puerto 8080..."
           docker run -d --name servidor_prueba -p 8080:80 mi-nginx-empresa:latest
           
-          # Esperamos 3 segundos a que el servicio Nginx termine de arrancar
-          sleep 3
+          # Esperamos 5 segundos para dar margen al arranque de Nginx en la VM
+          sleep 5
           
           echo "Haciendo una petición HTTP de prueba (curl)..."
-          curl -I http://localhost:8080
+          # Usamos flags seguros para validar el estado del servidor
+          curl -sI http://localhost:8080 | grep -E "HTTP/1.1 200|HTTP/2 200"
           
           echo "¡El servidor web responde correctamente!"
 
       # Paso 4: Limpieza del entorno de pruebas
+      # Añadimos 'always()' para que limpie el runner aunque el curl del paso anterior falle
       - name: Apagar y limpiar contenedor de pruebas
+        if: always()
         run: |
-          docker stop servidor_prueba
-          docker rm servidor_prueba
+          docker stop servidor_prueba || true
+          docker rm servidor_prueba || true
