@@ -27,9 +27,11 @@ jobs:
           echo "Compilando la imagen corporativa de Nginx con hardening..."
           docker build -t mi-nginx-empresa:latest .
 
+      # ==========================================
       # FASE 3: ESCANEO DE SEGURIDAD (VULNERABILIDADES)
+      # ==========================================
       - name: Analizar seguridad de la imagen (Trivy)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.24.0  # <--- CAMBIA AQUÍ A v0.24.0
         with:
           scan-type: 'image'
           image-ref: 'mi-nginx-empresa:latest'
