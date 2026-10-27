@@ -22,7 +22,7 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: 'Dockerfile'
-          no-fail: true # Te avisa de fallos de buenas prácticas sin romper el pipeline de inmediato
+          no-fail: true
 
       # ==========================================
       # FASE 2: CONSTRUCCIÓN (CONSTRUIDO SOLO 1 VEZ)
@@ -65,7 +65,7 @@ jobs:
       # FASE 5: LIMPIEZA AUTOMÁTICA DEL RUNNER
       # ==========================================
       - name: Apagar y limpiar contenedor de pruebas
-        if: always() # Se ejecuta siempre, incluso si el paso del curl falla
+        if: always()
         run: |
           docker stop servidor_prueba || true
           docker rm servidor_prueba || true
