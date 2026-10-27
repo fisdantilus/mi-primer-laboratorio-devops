@@ -4,7 +4,7 @@
 FROM nginx:1.27.2-alpine AS builder
 
 # Instalar herramientas básicas necesarias para validar configuraciones
-RUN apk add --no-cache openssl=3.3.2-r1
+RUN apk add --no-cache openssl
 
 # Copiar nuestra configuración personalizada de Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
