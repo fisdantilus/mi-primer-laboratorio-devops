@@ -36,12 +36,12 @@ jobs:
       # FASE 3: ESCANEO DE SEGURIDAD (VULNERABILIDADES)
       # ==========================================
       - name: Analizar seguridad de la imagen (Trivy)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0  # <- Verifica que dice trivy-action y v0.28.0
         with:
           scan-type: 'image'
           image-ref: 'mi-nginx-empresa:latest'
           format: 'table'
-          exit-code: '0'     # Cambia a '1' en producción para bloquear si hay fallos críticos graves
+          exit-code: '0'
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
