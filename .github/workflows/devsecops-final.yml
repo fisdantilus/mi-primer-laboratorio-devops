@@ -1,4 +1,4 @@
-name: Pipeline DevSecOps Unificado - Nginx & Seguridad
+name: Pipeline DevSecOps Unificado - Nginx & Seguridad Avanzada
 
 on:
   push:
@@ -6,14 +6,33 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# OBLIGATORIO PARA COSIGN: Permisos para escribir en el registro y firmar con OpenID Connect
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
 jobs:
   devsecops-ci:
     name: Integración Continua y Auditoría de Seguridad
     runs-on: ubuntu-24.04
 
     steps:
+      # ==========================================
+      # FASE 1: DESCARGA Y ANÁLISIS DE CÓDIGO
+      # ==========================================
       - name: Descargar repositorio
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Descarga todo el historial, necesario para un escaneo de secretos efectivo
+
+      # NUEVO: Escaneo de secretos en el código e historial de Git con Trufflehog
+      - name: Escanear Secretos Expuestos (TruffleHog)
+        uses: trufflesecurity/trufflehog-enterprise-github-action@main
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified # Evita falsos positivos enfocándose en credenciales reales
 
       - name: Validar sintaxis del Dockerfile (Hadolint)
         uses: hadolint/hadolint-action@v3.1.0
@@ -21,17 +40,31 @@ jobs:
           dockerfile: 'Dockerfile'
           no-fail: true
 
-      # FASE 2: CONSTRUCCIÓN
+      # ==========================================
+      # FASE 2: CONSTRUCCIÓN Y AUTENTICACIÓN
+      # ==========================================
+      # NUEVO: Nos logueamos en el registro de contenedores de GitHub (GHCR)
+      - name: Autenticar en GitHub Packages (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Construir imagen Docker de Nginx
         run: |
           echo "Compilando la imagen corporativa de Nginx con hardening..."
-          docker build -t mi-nginx-empresa:latest .
+          # Convertimos el nombre del repositorio a minúsculas para cumplir con el estándar de Docker
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/$REPO_LOWER:latest .
+          # Creamos un tag local para el healthcheck
+          docker tag ghcr.io/$REPO_LOWER:latest mi-nginx-empresa:latest
 
       # ==========================================
       # FASE 3: ESCANEO DE SEGURIDAD (VULNERABILIDADES)
       # ==========================================
       - name: Analizar seguridad de la imagen (Trivy)
-        uses: aquasecurity/trivy-action@v0.24.0  # <--- CAMBIA AQUÍ A v0.24.0
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           scan-type: 'image'
           image-ref: 'mi-nginx-empresa:latest'
@@ -40,7 +73,9 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
+      # ==========================================
       # FASE 4: VALIDACIÓN EN VIVO (HEALTHCHECK)
+      # ==========================================
       - name: Levantar servidor y verificar estado
         run: |
           echo "Levantando el contenedor en el puerto 8080..."
@@ -50,11 +85,27 @@ jobs:
           curl -sI http://localhost:8080 | grep -E "HTTP/1.1 200|HTTP/2 200"
           echo "¡El servidor web responde correctamente con código 200!"
 
-      # FASE 5: LIMPIEZA AUTOMÁTICA DEL RUNNER
       - name: Apagar y limpiar contenedor de pruebas
         if: always()
         run: |
           docker stop servidor_prueba || true
           docker rm servidor_prueba || true
 
-          # Lanzar pipeline final
+      # ==========================================
+      # FASE 5: PUBLICACIÓN Y FIRMA DIGITAL (NUEVO)
+      # ==========================================
+      # Si el Healthcheck ha ido bien, subimos la imagen definitiva al registro
+      - name: Subir imagen segura a GHCR
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker push ghcr.io/$REPO_LOWER:latest
+
+      # Instalamos la herramienta oficial de firma de la Linux Foundation (Cosign)
+      - name: Instalar Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
+      # Firmamos la imagen usando criptografía basada en tu identidad de GitHub (Keyless signing)
+      - name: Firmar digitalmente la imagen Docker (Cosign)
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          cosign sign --yes ghcr.io/$REPO_LOWER:latest
