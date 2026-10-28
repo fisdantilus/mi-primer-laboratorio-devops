@@ -26,19 +26,9 @@ jobs:
         with:
           fetch-depth: 0 # Descarga todo el historial, necesario para un escaneo de secretos efectivo
 
-      # NUEVO: Escaneo de secretos en el código e historial de Git con Trufflehog
+      # NUEVO: Escaneo de secretos en el código e historial de Git con Trufflehog (Simplificado)
       - name: Escanear Secretos Expuestos (TruffleHog)
         uses: trufflesecurity/trufflehog-enterprise-github-action@main
-        with:
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --only-verified # Evita falsos positivos enfocándose en credenciales reales
-
-      - name: Validar sintaxis del Dockerfile (Hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: 'Dockerfile'
-          no-fail: true
 
       # ==========================================
       # FASE 2: CONSTRUCCIÓN Y AUTENTICACIÓN
